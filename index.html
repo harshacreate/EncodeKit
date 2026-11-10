@@ -58,6 +58,8 @@ function swap(){$('in').value=$('out').value;convert()}
 function copyOut(){navigator.clipboard&&navigator.clipboard.writeText($('out').value)}
 function b64e(s){return btoa(unescape(encodeURIComponent(s)))}
 function b64d(s){return decodeURIComponent(escape(atob(s.replace(/\s+/g,''))))}
+function hexBytes(s){const clean=s.trim().replace(/^0x/i,'').replace(/\s+/g,'');if(!clean||clean.length%2||!/^[\da-f]+$/i.test(clean))throw new Error('invalid hex');return new Uint8Array(clean.match(/.{2}/g).map(b=>parseInt(b,16)))}
+function binaryBytes(s){const clean=s.replace(/\s+/g,'');if(!clean||clean.length%8||/[^01]/.test(clean))throw new Error('invalid binary');return new Uint8Array(clean.match(/.{8}/g).map(b=>parseInt(b,2)))}
 function rot13(s){return s.replace(/[a-z]/gi,c=>String.fromCharCode((c<='Z'?90:122)>=(c.charCodeAt(0)+13)?c.charCodeAt(0)+13:c.charCodeAt(0)-13))}
 function convert(){
   const s=$('in').value;$('status').textContent='';if(!s){$('out').value='';return}
@@ -65,8 +67,8 @@ function convert(){
     let r='';
     if(op==='base64')r=dir==='enc'?b64e(s):b64d(s);
     else if(op==='url')r=dir==='enc'?encodeURIComponent(s):decodeURIComponent(s);
-    else if(op==='hex')r=dir==='enc'?[...new TextEncoder().encode(s)].map(b=>b.toString(16).padStart(2,'0')).join(''):new TextDecoder().decode(new Uint8Array(s.replace(/\s|0x/g,'').match(/.{1,2}/g).map(h=>parseInt(h,16))));
-    else if(op==='binary')r=dir==='enc'?[...new TextEncoder().encode(s)].map(b=>b.toString(2).padStart(8,'0')).join(' '):new TextDecoder().decode(new Uint8Array(s.trim().split(/\s+/).map(b=>parseInt(b,2))));
+    else if(op==='hex')r=dir==='enc'?[...new TextEncoder().encode(s)].map(b=>b.toString(16).padStart(2,'0')).join(''):new TextDecoder().decode(hexBytes(s));
+    else if(op==='binary')r=dir==='enc'?[...new TextEncoder().encode(s)].map(b=>b.toString(2).padStart(8,'0')).join(' '):new TextDecoder().decode(binaryBytes(s));
     else if(op==='rot13')r=rot13(s);
     else if(op==='html')r=dir==='enc'?s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])):s.replace(/&(amp|lt|gt|quot|#39);/g,m=>({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&#39;':"'"}[m]));
     $('out').value=r;$('outLabel').textContent=(dir==='enc'?'Encoded':'Decoded')+' ('+op+')';
